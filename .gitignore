@@ -33,3 +33,4 @@ vendor/
 
 terraform-provider-dreamfactory
 *.tfvars
+*.tf
