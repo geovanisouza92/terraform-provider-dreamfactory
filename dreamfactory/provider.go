@@ -23,7 +23,9 @@ func Provider() terraform.ResourceProvider {
 				Required: true,
 			},
 		},
-		ResourcesMap:  map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"dreamfactory_user": resourceUser(),
+		},
 		ConfigureFunc: configureProvider,
 	}
 }
