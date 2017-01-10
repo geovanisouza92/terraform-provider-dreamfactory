@@ -1,3 +1,8 @@
+package api
+
+import (
+	"github.com/geovanisouza92/terraform-provider-dreamfactory/dreamfactory/types"
+)
 
 func (c *Client) UserCreate(u types.UsersRequest) (ur types.UsersResponse, err error) {
 	err = c.send("POST", "/api/v2/system/user", 200, u, &ur)
