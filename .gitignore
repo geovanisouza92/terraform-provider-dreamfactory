@@ -32,5 +32,6 @@ _testmain.go
 vendor/
 
 terraform-provider-dreamfactory
-*.tfvars
 *.tf
+*.tfvars
+*.tfstate*
