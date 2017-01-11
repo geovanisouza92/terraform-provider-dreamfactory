@@ -1,8 +1,9 @@
 package dreamfactory
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
 	"strconv"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/geovanisouza92/terraform-provider-dreamfactory/dreamfactory/api"
 	"github.com/geovanisouza92/terraform-provider-dreamfactory/dreamfactory/types"
@@ -69,19 +70,7 @@ func resourceUser() *schema.Resource {
 }
 
 func resourceUserCreate(d *schema.ResourceData, c interface{}) error {
-	ur := types.User{
-		Name:             d.Get("name").(string),
-		Username:         d.Get("username").(string),
-		FirstName:        d.Get("first_name").(string),
-		LastName:         d.Get("last_name").(string),
-		Email:            d.Get("email").(string),
-		IsActive:         d.Get("is_active").(bool),
-		Phone:            d.Get("phone").(string),
-		SecurityQuestion: d.Get("security_question").(string),
-		SecurityAnswer:   d.Get("security_answer").(string),
-		DefaultAppID:     d.Get("default_app_id").(int),
-		OauthProvider:    d.Get("oauth_provider").(string),
-	}
+	ur := types.UserFromResourceData(d)
 	u, err := c.(*api.Client).UserCreate(types.UsersRequest{Resource: []types.User{ur}})
 	if err != nil {
 		return err
@@ -92,34 +81,15 @@ func resourceUserCreate(d *schema.ResourceData, c interface{}) error {
 
 func resourceUserRead(d *schema.ResourceData, c interface{}) error {
 	u, err := c.(*api.Client).UserRead(d.Id())
-	d.Set("name", u.Name)
-	d.Set("username", u.Username)
-	d.Set("first_name", u.FirstName)
-	d.Set("last_name", u.LastName)
-	d.Set("email", u.Email)
-	d.Set("is_active", u.IsActive)
-	d.Set("phone", u.Phone)
-	d.Set("security_question", u.SecurityQuestion)
-	d.Set("security_answer", u.SecurityAnswer)
-	d.Set("default_app_id", u.DefaultAppID)
-	d.Set("oauth_provider", u.OauthProvider)
+	if err != nil {
+		return err
+	}
+	u.FillResourceData(d)
 	return err
 }
 
 func resourceUserUpdate(d *schema.ResourceData, c interface{}) error {
-	ur := types.User{
-		Name:             d.Get("name").(string),
-		Username:         d.Get("username").(string),
-		FirstName:        d.Get("first_name").(string),
-		LastName:         d.Get("last_name").(string),
-		Email:            d.Get("email").(string),
-		IsActive:         d.Get("is_active").(bool),
-		Phone:            d.Get("phone").(string),
-		SecurityQuestion: d.Get("security_question").(string),
-		SecurityAnswer:   d.Get("security_answer").(string),
-		DefaultAppID:     d.Get("default_app_id").(int),
-		OauthProvider:    d.Get("oauth_provider").(string),
-	}
+	ur := types.UserFromResourceData(d)
 	return c.(*api.Client).UserUpdate(d.Id(), ur)
 }
 
