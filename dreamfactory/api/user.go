@@ -5,7 +5,7 @@ import (
 )
 
 func (c *Client) UserCreate(u types.UsersRequest) (ur types.UsersResponse, err error) {
-	err = c.send("POST", "/api/v2/system/user", 200, u, &ur)
+	err = c.send("POST", "/api/v2/system/user", 201, u, &ur)
 	return
 }
 

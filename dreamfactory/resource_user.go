@@ -16,6 +16,9 @@ func resourceUser() *schema.Resource {
 		Update: resourceUserUpdate,
 		Delete: resourceUserDelete,
 		Exists: resourceUserExists,
+		Importer: &schema.ResourceImporter{
+			State: resourceUserImporter,
+		},
 		// TODO: Add validations, defaults and computed props
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
@@ -100,4 +103,19 @@ func resourceUserDelete(d *schema.ResourceData, c interface{}) error {
 func resourceUserExists(d *schema.ResourceData, c interface{}) (bool, error) {
 	err := c.(*api.Client).UserExists(d.Id())
 	return err == nil, err
+}
+
+func resourceUserImporter(d *schema.ResourceData, c interface{}) ([]*schema.ResourceData, error) {
+	items := []*schema.ResourceData{}
+
+	u, err := c.(*api.Client).UserRead(d.Id())
+	if err != nil {
+		return items, err
+	}
+
+	u.FillResourceData(d)
+
+	items = append(items, d)
+
+	return items, nil
 }
