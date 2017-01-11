@@ -31,7 +31,7 @@ _testmain.go
 # External packages folder
 vendor/
 
-terraform-provider-dreamfactory
 *.tf
-*.tfvars
 *.tfstate*
+*.tfvars
+terraform-provider-dreamfactory
