@@ -1,0 +1,6 @@
+package types
+
+type Metadata struct {
+	Schema []string `json:"schema,omitempty"`
+	Count  int      `json:"count,omitempty"`
+}
