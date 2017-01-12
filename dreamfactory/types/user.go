@@ -10,11 +10,12 @@ type UsersRequest struct {
 }
 
 type UsersResponse struct {
-	Resource []User `json:"resource,omitempty"`
+	Resource []User   `json:"resource,omitempty"`
+	Meta     Metadata `json:"meta,omitempty"`
 }
 
 type User struct {
-	Id               int    `json:"id,omitempty"`
+	ID               int    `json:"id,omitempty"`
 	Name             string `json:"name"`
 	Username         string `json:"username,omitempty"`
 	FirstName        string `json:"first_name,omitempty"`

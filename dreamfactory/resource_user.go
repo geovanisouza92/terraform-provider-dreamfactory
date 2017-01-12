@@ -78,7 +78,7 @@ func resourceUserCreate(d *schema.ResourceData, c interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.SetId(strconv.Itoa(u.Resource[0].Id))
+	d.SetId(strconv.Itoa(u.Resource[0].ID))
 	return nil
 }
 
@@ -92,8 +92,8 @@ func resourceUserRead(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceUserUpdate(d *schema.ResourceData, c interface{}) error {
-	ur := types.UserFromResourceData(d)
-	return c.(*api.Client).UserUpdate(d.Id(), ur)
+	u := types.UserFromResourceData(d)
+	return c.(*api.Client).UserUpdate(d.Id(), u)
 }
 
 func resourceUserDelete(d *schema.ResourceData, c interface{}) error {
@@ -101,6 +101,7 @@ func resourceUserDelete(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceUserExists(d *schema.ResourceData, c interface{}) (bool, error) {
+	// FIXME: Possible bug
 	err := c.(*api.Client).UserExists(d.Id())
 	return err == nil, err
 }
@@ -114,7 +115,6 @@ func resourceUserImporter(d *schema.ResourceData, c interface{}) ([]*schema.Reso
 	}
 
 	u.FillResourceData(d)
-
 	items = append(items, d)
 
 	return items, nil
