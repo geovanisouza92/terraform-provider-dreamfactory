@@ -19,9 +19,9 @@ func (c *Client) AppUpdate(id string, a types.App) error {
 }
 
 func (c *Client) AppDelete(id string) error {
-	return c.send("DELETE", "/api/v2/system/app"+id, 200, nil, nil)
+	return c.send("DELETE", "/api/v2/system/app/"+id, 200, nil, nil)
 }
 
 func (c *Client) AppExists(id string) error {
-	return c.send("GET", "/api/v2/system/app"+id, 200, nil, nil)
+	return c.send("GET", "/api/v2/system/app/"+id, 200, nil, nil)
 }

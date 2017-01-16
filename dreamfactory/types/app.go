@@ -25,27 +25,39 @@ type App struct {
 	URL                   string `json:"url,omitempty"`
 	StorageServiceID      int    `json:"storage_service_id,omitempty"`
 	StorageContainer      string `json:"storage_container,omitempty"`
-	RequiresFullscreen    bool   `json:"requires_fullscreen,omitempty"`
 	AllowFullscreenToggle bool   `json:"allow_fullscreen_toggle,omitempty"`
-	ToggleLocation        string `json:"toggle_location,omitempty"`
 	RoleID                int    `json:"role_id,omitempty"`
 	LaunchURL             string `json:"launch_url,omitempty"`
 }
 
+var (
+	appValues = map[string]int{
+		"no_storage":   0,
+		"provisioned":  1,
+		"remote":       2,
+		"on_webserver": 3,
+	}
+	appValues_ = map[int]string{
+		0: "no_storage",
+		1: "provisioned",
+		2: "remote",
+		3: "on_webserver",
+	}
+)
+
 func AppFromResourceData(d *schema.ResourceData) App {
+	api_key, _ := d.Get("api_key").(string)
 	return App{
 		Name:                  d.Get("name").(string),
-		APIKey:                d.Get("api_key").(string),
+		APIKey:                api_key,
 		Description:           d.Get("description").(string),
 		IsActive:              d.Get("is_active").(bool),
-		Type:                  d.Get("type").(int),
+		Type:                  appValues[d.Get("type").(string)],
 		Path:                  d.Get("path").(string),
 		URL:                   d.Get("url").(string),
 		StorageServiceID:      d.Get("storage_service_id").(int),
 		StorageContainer:      d.Get("storage_container").(string),
-		RequiresFullscreen:    d.Get("requires_fullscreen").(bool),
 		AllowFullscreenToggle: d.Get("allow_fullscreen_toggle").(bool),
-		ToggleLocation:        d.Get("toggle_location").(string),
 		RoleID:                d.Get("role_id").(int),
 		LaunchURL:             d.Get("launch_url").(string),
 	}
@@ -56,14 +68,16 @@ func (a *App) FillResourceData(d *schema.ResourceData) {
 	d.Set("api_key", a.APIKey)
 	d.Set("description", a.Description)
 	d.Set("is_active", a.IsActive)
-	d.Set("type", a.Type)
+	d.Set("type", appValues_[a.Type])
 	d.Set("path", a.Path)
-	d.Set("url", a.URL)
+	if a.Type == appValues["remote"] {
+		d.Set("url", a.LaunchURL)
+	} else {
+		d.Set("url", a.URL)
+	}
 	d.Set("storage_service_id", a.StorageServiceID)
 	d.Set("storage_container", a.StorageContainer)
-	d.Set("requires_fullscreen", a.RequiresFullscreen)
 	d.Set("allow_fullscreen_toggle", a.AllowFullscreenToggle)
-	d.Set("toggle_location", a.ToggleLocation)
 	d.Set("role_id", a.RoleID)
 	d.Set("launch_url", a.LaunchURL)
 }
