@@ -7,8 +7,12 @@ services:
       MYSQL_DATABASE: dreamfactory
       MYSQL_USER: df_admin
       MYSQL_PASSWORD: df_admin
+    volumes:
+      - mysql_data:/var/lib/mysql
   redis:
     image: redis
+    volumes:
+      - redis_data:/data
   df:
     image: dreamfactorysoftware/df-docker
     environment:
@@ -19,8 +23,17 @@ services:
       REDIS_HOST: redis
       REDIS_DATABASE: 0
       REDIS_PORT: 6379
+    volumes:
+      - df_data:/opt/dreamfactory/storage/
     ports:
       - "80:80"
     depends_on:
       - mysql
       - redis
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  df_data:
+    driver: local
