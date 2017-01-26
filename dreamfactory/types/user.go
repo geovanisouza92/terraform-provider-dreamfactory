@@ -45,7 +45,7 @@ func UserFromResourceData(d *schema.ResourceData) User {
 	}
 }
 
-func (u *User) FillResourceData(d *schema.ResourceData) {
+func (u *User) FillResourceData(d *schema.ResourceData) error {
 	d.Set("name", u.Name)
 	d.Set("username", u.Username)
 	d.Set("first_name", u.FirstName)
@@ -57,4 +57,6 @@ func (u *User) FillResourceData(d *schema.ResourceData) {
 	d.Set("security_answer", u.SecurityAnswer)
 	d.Set("default_app_id", u.DefaultAppID)
 	d.Set("oauth_provider", u.OauthProvider)
+
+	return nil
 }

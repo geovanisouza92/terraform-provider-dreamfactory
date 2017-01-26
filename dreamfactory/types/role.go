@@ -122,7 +122,7 @@ func RoleFromResourceData(d *schema.ResourceData) Role {
 	}
 }
 
-func (r *Role) FillResourceData(d *schema.ResourceData) {
+func (r *Role) FillResourceData(d *schema.ResourceData) error {
 	accesses := []map[string]interface{}{}
 	for _, ra := range r.Access {
 		accesses = append(accesses, ra.toMap())
@@ -138,6 +138,8 @@ func (r *Role) FillResourceData(d *schema.ResourceData) {
 	d.Set("is_active", r.IsActive)
 	d.Set("access", accesses)
 	d.Set("lookup", lookups)
+
+	return nil
 }
 
 func roleAccessFromMap(m map[string]interface{}) RoleAccess {

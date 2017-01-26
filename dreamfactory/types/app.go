@@ -63,7 +63,7 @@ func AppFromResourceData(d *schema.ResourceData) App {
 	}
 }
 
-func (a *App) FillResourceData(d *schema.ResourceData) {
+func (a *App) FillResourceData(d *schema.ResourceData) error {
 	d.Set("name", a.Name)
 	d.Set("api_key", a.APIKey)
 	d.Set("description", a.Description)
@@ -80,4 +80,6 @@ func (a *App) FillResourceData(d *schema.ResourceData) {
 	d.Set("allow_fullscreen_toggle", a.AllowFullscreenToggle)
 	d.Set("role_id", a.RoleID)
 	d.Set("launch_url", a.LaunchURL)
+
+	return nil
 }

@@ -132,8 +132,7 @@ func resourceRoleRead(d *schema.ResourceData, c interface{}) error {
 	if err != nil {
 		return err
 	}
-	r.FillResourceData(d)
-	return nil
+	return r.FillResourceData(d)
 }
 
 func resourceRoleUpdate(d *schema.ResourceData, c interface{}) error {
@@ -159,7 +158,9 @@ func resourceRoleImporter(d *schema.ResourceData, c interface{}) ([]*schema.Reso
 		return items, err
 	}
 
-	r.FillResourceData(d)
+	if err = r.FillResourceData(d); err != nil {
+		return items, err
+	}
 	items = append(items, d)
 
 	return items, nil

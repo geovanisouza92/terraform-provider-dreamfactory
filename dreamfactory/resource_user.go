@@ -87,8 +87,7 @@ func resourceUserRead(d *schema.ResourceData, c interface{}) error {
 	if err != nil {
 		return err
 	}
-	u.FillResourceData(d)
-	return err
+	return u.FillResourceData(d)
 }
 
 func resourceUserUpdate(d *schema.ResourceData, c interface{}) error {
@@ -114,7 +113,9 @@ func resourceUserImporter(d *schema.ResourceData, c interface{}) ([]*schema.Reso
 		return items, err
 	}
 
-	u.FillResourceData(d)
+	if err = u.FillResourceData(d); err != nil {
+		return items, err
+	}
 	items = append(items, d)
 
 	return items, nil
