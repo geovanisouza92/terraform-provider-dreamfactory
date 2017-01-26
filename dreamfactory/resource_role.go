@@ -52,7 +52,6 @@ func resourceRole() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
-							// TODO: Transformar string em número "máscara"
 						},
 						"requestor_mask": &schema.Schema{
 							Type:     schema.TypeSet,
@@ -60,7 +59,6 @@ func resourceRole() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
-							// TODO: Transformar string em número "máscara"
 						},
 						"filters": &schema.Schema{
 							Type:     schema.TypeSet,
