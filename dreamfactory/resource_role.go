@@ -1,6 +1,8 @@
 package dreamfactory
 
 import (
+	"errors"
+	"log"
 	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -38,6 +40,11 @@ func resourceRole() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: false,
+							Computed: true,
+						},
 						"service_id": &schema.Schema{
 							Type:     schema.TypeInt,
 							Required: true,
@@ -73,6 +80,13 @@ func resourceRole() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										Default:  "=",
+										ValidateFunc: func(v interface{}, k string) (ws []string, errs []error) {
+											value := v.(string)
+											if !types.IsValidOperator(value) {
+												errs = append(errs, errors.New("Invalid operator for access->filters: "+value))
+											}
+											return
+										},
 									},
 									"value": &schema.Schema{
 										Type:     schema.TypeString,
@@ -86,6 +100,13 @@ func resourceRole() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Default:  "AND",
+							ValidateFunc: func(v interface{}, k string) (ws []string, errs []error) {
+								value := v.(string)
+								if !types.IsValidOp(value) {
+									errs = append(errs, errors.New("Invalid op for access: "+value))
+								}
+								return
+							},
 						},
 					},
 				},
@@ -95,6 +116,11 @@ func resourceRole() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: false,
+							Computed: true,
+						},
 						"name": &schema.Schema{
 							Type:     schema.TypeString,
 							Required: true,
@@ -116,12 +142,17 @@ func resourceRole() *schema.Resource {
 }
 
 func resourceRoleCreate(d *schema.ResourceData, c interface{}) error {
-	rr := types.RoleFromResourceData(d)
-	r, err := c.(*api.Client).RoleCreate(types.RolesRequest{Resource: []types.Role{rr}})
+	rr, err := types.RoleFromResourceData(d)
+	if err != nil {
+		return nil
+	}
+	r, err := c.(*api.Client).RoleCreate(types.RolesRequest{Resource: []types.Role{*rr}})
 	if err != nil {
 		return err
 	}
-	d.SetId(strconv.Itoa(r.Resource[0].ID))
+	role := r.Resource[0]
+	log.Printf("%#v\n", role)
+	d.SetId(strconv.Itoa(role.ID))
 	return nil
 }
 
@@ -134,7 +165,10 @@ func resourceRoleRead(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceRoleUpdate(d *schema.ResourceData, c interface{}) error {
-	r := types.RoleFromResourceData(d)
+	r, err := types.RoleFromResourceData(d)
+	if err != nil {
+		return nil
+	}
 	return c.(*api.Client).RoleUpdate(d.Id(), r)
 }
 

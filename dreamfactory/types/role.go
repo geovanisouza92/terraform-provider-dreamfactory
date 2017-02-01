@@ -1,19 +1,24 @@
 package types
 
 import (
+	"strconv"
+
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+// RolesRequest is a request object for Role CRUD
 type RolesRequest struct {
 	Resource []Role `json:"resource,omitempty"`
 	IDs      []int  `json:"ids,omitempty"`
 }
 
+// RolesResponse is a response object for Role CRUD
 type RolesResponse struct {
 	Resource []Role   `json:"resource,omitempty"`
 	Meta     Metadata `json:"meta,omitempty"`
 }
 
+// Role represents a DreamFactory role
 type Role struct {
 	ID          int          `json:"id"`
 	Name        string       `json:"name"`
@@ -23,6 +28,7 @@ type Role struct {
 	Lookups     []RoleLookup `json:"role_lookup_by_role_id"`
 }
 
+// RoleAccess represents a DreamFactory role access configuration
 type RoleAccess struct {
 	ID            int          `json:"id"`
 	RoleID        int          `json:"role_id"`
@@ -34,12 +40,14 @@ type RoleAccess struct {
 	FilterOp      string       `json:"filter_op"`
 }
 
+// RoleFilter represents a DreamFactory role filter configuration
 type RoleFilter struct {
 	Name     string `json:"name"`
 	Operator string `json:"operator"`
 	Value    string `json:"value"`
 }
 
+// RoleLookup represents a DreamFactory role lookup
 type RoleLookup struct {
 	ID      int    `json:"id"`
 	RoleID  int    `json:"role_id"`
@@ -49,15 +57,22 @@ type RoleLookup struct {
 }
 
 const (
+	// Get HTTP method
 	Get byte = 1 << iota
+	// Post HTTP method
 	Post
+	// Put HTTP method
 	Put
+	// Patch HTTP method
 	Patch
+	// Delete HTTP method
 	Delete
 )
 
 const (
-	Api byte = 1 << iota
+	// API define that request can came from HTTP API
+	API byte = 1 << iota
+	// Script define that request can came from Event scripts
 	Script
 )
 
@@ -77,136 +92,163 @@ var (
 		Delete: "delete",
 	}
 	roleRequestorStringToByte = map[string]byte{
-		"api":    Api,
+		"api":    API,
 		"script": Script,
 	}
 	roleRequestorByteToString = map[byte]string{
-		Api:    "api",
+		API:    "api",
 		Script: "script",
 	}
-	roleFilterOperators = []string{
-		"=",
-		"!=",
-		">",
-		"<",
-		">=",
-		"<=",
-		"in",
-		"not in",
-		"starts with",
-		"ends with",
-		"contains",
-		"is null",     // value always empty
-		"is not null", // value always empty
+	roleFilterOperators = map[string]bool{
+		"=":           true,
+		"!=":          true,
+		">":           true,
+		"<":           true,
+		">=":          true,
+		"<=":          true,
+		"in":          true,
+		"not in":      true,
+		"starts with": true,
+		"ends with":   true,
+		"contains":    true,
+		"is null":     true, // value always empty
+		"is not null": true, // value always empty
 	}
-	roleFilterOp = []string{"AND", "OR"}
+	roleFilterOp = map[string]bool{"AND": true, "OR": true}
 )
 
-func RoleFromResourceData(d *schema.ResourceData) Role {
-	accesses := []RoleAccess{}
-	for _, ra := range d.Get("access").(*schema.Set).List() {
-		accesses = append(accesses, roleAccessFromMap(ra.(map[string]interface{})))
+// RoleFromResourceData creates a Role object from Terraform ResourceData
+func RoleFromResourceData(d *schema.ResourceData) (*Role, error) {
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return nil, err
 	}
 
-	lookups := []RoleLookup{}
-	for _, rl := range d.Get("lookups").(*schema.Set).List() {
-		lookups = append(lookups, roleLookupFromMap(rl.(map[string]interface{})))
-	}
-
-	return Role{
+	r := Role{
+		ID:          id,
 		Name:        d.Get("name").(string),
 		Description: d.Get("description").(string),
-		IsActive:    d.Get("is_active").(bool),
-		Access:      accesses,
-		Lookups:     lookups,
 	}
+
+	access := []RoleAccess{}
+	for _, ra := range d.Get("access").(*schema.Set).List() {
+		if ra == nil {
+			continue
+		}
+		access = append(access, roleAccessFromMap(r.ID, ra.(map[string]interface{})))
+	}
+	r.Access = access
+
+	lookups := []RoleLookup{}
+	for _, rl := range d.Get("lookup").(*schema.Set).List() {
+		if rl == nil {
+			continue
+		}
+		lookups = append(lookups, roleLookupFromMap(r.ID, rl.(map[string]interface{})))
+	}
+	r.Lookups = lookups
+
+	if s := d.Get("is_active").(string); s == "true" {
+		r.IsActive = true
+	}
+
+	return &r, nil
 }
 
+// FillResourceData copy information from the Role to Terraform ResourceData
 func (r *Role) FillResourceData(d *schema.ResourceData) error {
-	accesses := []map[string]interface{}{}
+	access := &schema.Set{F: hashMapStringInterface}
 	for _, ra := range r.Access {
-		accesses = append(accesses, ra.toMap())
+		access.Add(ra.toMap())
 	}
 
-	lookups := []map[string]interface{}{}
+	lookups := &schema.Set{F: hashMapStringInterface}
 	for _, rl := range r.Lookups {
-		lookups = append(lookups, rl.toMap())
+		lookups.Add(rl.toMap())
 	}
 
 	d.Set("name", r.Name)
 	d.Set("description", r.Description)
 	d.Set("is_active", r.IsActive)
-	d.Set("access", accesses)
+	d.Set("access", access)
 	d.Set("lookup", lookups)
 
 	return nil
 }
 
-func roleAccessFromMap(m map[string]interface{}) RoleAccess {
-	verb_mask := byte(0)
+func roleAccessFromMap(roleID int, m map[string]interface{}) RoleAccess {
+	verbMask := byte(0)
 	for _, s := range m["verb_mask"].(*schema.Set).List() {
-		verb_mask &= roleVerbsStringToByte[s.(string)]
+		if s == nil {
+			continue
+		}
+		verbMask += roleVerbsStringToByte[s.(string)]
 	}
 
-	requestor_mask := byte(0)
+	requestorMask := byte(0)
 	for _, s := range m["requestor_mask"].(*schema.Set).List() {
-		requestor_mask &= roleRequestorStringToByte[s.(string)]
+		if s == nil {
+			continue
+		}
+		requestorMask += roleRequestorStringToByte[s.(string)]
 	}
 
 	filters := []RoleFilter{}
 	for _, rf := range m["filters"].(*schema.Set).List() {
-		filters = append(filters, roleFilterFromMap(rf.(map[string]string)))
+		if rf == nil {
+			continue
+		}
+		filters = append(filters, roleFilterFromMap(rf.(map[string]interface{})))
 	}
 
 	return RoleAccess{
-		ID:            m["id"].(int),
-		RoleID:        m["role_id"].(int),
+		ID:            getInt(m, "id"),
+		RoleID:        roleID,
 		ServiceID:     m["service_id"].(int),
 		Component:     m["component"].(string),
-		VerbMask:      int(verb_mask),
-		RequestorMask: int(requestor_mask),
+		VerbMask:      int(verbMask),
+		RequestorMask: int(requestorMask),
 		Filters:       filters,
 		FilterOp:      m["filter_op"].(string),
 	}
 }
 
 func (ra *RoleAccess) toMap() map[string]interface{} {
-	verb_mask := []string{}
+	verbMask := &schema.Set{F: hashString}
 	for b, s := range roleVerbsByteToString {
 		if byte(ra.VerbMask)&b != 0 {
-			verb_mask = append(verb_mask, s)
+			verbMask.Add(s)
 		}
 	}
 
-	requestor_mask := []string{}
+	requestorMask := &schema.Set{F: hashString}
 	for b, s := range roleRequestorByteToString {
 		if byte(ra.RequestorMask)&b != 0 {
-			requestor_mask = append(requestor_mask, s)
+			requestorMask.Add(s)
 		}
 	}
 
-	filters := []map[string]string{}
+	filters := &schema.Set{F: hashMapStringString}
 	for _, rf := range ra.Filters {
-		filters = append(filters, rf.toMap())
+		filters.Add(rf.toMap())
 	}
 
 	return map[string]interface{}{
 		"id":             ra.ID,
-		"role_id":        ra.RoleID,
 		"service_id":     ra.ServiceID,
 		"component":      ra.Component,
-		"verb_mask":      verb_mask,
-		"requestor_mask": requestor_mask,
+		"verb_mask":      verbMask,
+		"requestor_mask": requestorMask,
 		"filters":        filters,
 		"filter_op":      ra.FilterOp,
 	}
 }
 
-func roleFilterFromMap(m map[string]string) RoleFilter {
+func roleFilterFromMap(m map[string]interface{}) RoleFilter {
 	return RoleFilter{
-		Name:     m["name"],
-		Operator: m["operator"],
-		Value:    m["value"],
+		Name:     m["name"].(string),
+		Operator: m["operator"].(string),
+		Value:    m["value"].(string),
 	}
 }
 
@@ -218,10 +260,10 @@ func (rf *RoleFilter) toMap() map[string]string {
 	}
 }
 
-func roleLookupFromMap(m map[string]interface{}) RoleLookup {
+func roleLookupFromMap(roleID int, m map[string]interface{}) RoleLookup {
 	return RoleLookup{
-		ID:      m["id"].(int),
-		RoleID:  m["role_id"].(int),
+		ID:      getInt(m, "id"),
+		RoleID:  roleID,
 		Name:    m["name"].(string),
 		Value:   m["value"].(string),
 		Private: m["private"].(bool),
@@ -231,9 +273,21 @@ func roleLookupFromMap(m map[string]interface{}) RoleLookup {
 func (r *RoleLookup) toMap() map[string]interface{} {
 	return map[string]interface{}{
 		"id":      r.ID,
-		"role_id": r.RoleID,
 		"name":    r.Name,
 		"value":   r.Value,
 		"private": r.Private,
 	}
+}
+
+// IsValidOperator validates if a given operator is valid for lookups
+func IsValidOperator(o string) bool {
+	_, ok := roleFilterOperators[o]
+	return ok
+}
+
+// IsValidOp validates if a given logical operator is valid for a combination
+// of filters
+func IsValidOp(o string) bool {
+	_, ok := roleFilterOp[o]
+	return ok
 }
