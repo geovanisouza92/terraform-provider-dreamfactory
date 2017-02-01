@@ -1,6 +1,9 @@
 package types
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -15,22 +18,36 @@ type UsersResponse struct {
 }
 
 type User struct {
-	ID               int    `json:"id,omitempty"`
-	Name             string `json:"name"`
-	Username         string `json:"username,omitempty"`
-	FirstName        string `json:"first_name,omitempty"`
-	LastName         string `json:"last_name,omitempty"`
-	Email            string `json:"email"`
-	IsActive         bool   `json:"is_active,omitempty"`
-	Phone            string `json:"phone,omitempty"`
-	SecurityQuestion string `json:"security_question,omitempty"`
-	SecurityAnswer   string `json:"security_answer,omitempty"`
-	DefaultAppID     int    `json:"default_app_id,omitempty"`
-	OauthProvider    string `json:"oauth_provider,omitempty"`
+	ID               int          `json:"id,omitempty"`
+	Name             string       `json:"name"`
+	Username         string       `json:"username,omitempty"`
+	FirstName        string       `json:"first_name,omitempty"`
+	LastName         string       `json:"last_name,omitempty"`
+	Email            string       `json:"email"`
+	IsActive         bool         `json:"is_active,omitempty"`
+	Phone            string       `json:"phone,omitempty"`
+	SecurityQuestion string       `json:"security_question,omitempty"`
+	SecurityAnswer   string       `json:"security_answer,omitempty"`
+	DefaultAppID     int          `json:"default_app_id,omitempty"`
+	OauthProvider    string       `json:"oauth_provider,omitempty"`
+	Lookups          []UserLookup `json:"user_lookup_by_user_id,omitempty"`
 }
 
-func UserFromResourceData(d *schema.ResourceData) User {
-	return User{
+type UserLookup struct {
+	ID      int    `json:"id,omitempty"`
+	UserID  int    `json:"user_id,omitempty"`
+	Name    string `json:"name"`
+	Value   string `json:"value,omitempty"`
+	Private bool   `json:"private,omitempty"`
+}
+
+func UserFromResourceData(d *schema.ResourceData) (*User, error) {
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return nil, err
+	}
+	u := User{
+		ID:               id,
 		Name:             d.Get("name").(string),
 		Username:         d.Get("username").(string),
 		FirstName:        d.Get("first_name").(string),
@@ -43,20 +60,48 @@ func UserFromResourceData(d *schema.ResourceData) User {
 		DefaultAppID:     d.Get("default_app_id").(int),
 		OauthProvider:    d.Get("oauth_provider").(string),
 	}
+
+	count := d.Get("lookup.#").(int)
+	for i := 0; i < count; i++ {
+		prefix := fmt.Sprintf("lookup.%d.", i)
+		u.Lookups = append(u.Lookups, UserLookup{
+			ID:      d.Get(prefix + "id").(int),
+			UserID:  u.ID,
+			Name:    d.Get(prefix + "name").(string),
+			Value:   d.Get(prefix + "value").(string),
+			Private: d.Get(prefix + "private").(bool),
+		})
+	}
+
+	return &u, nil
 }
 
 func (u *User) FillResourceData(d *schema.ResourceData) error {
-	d.Set("name", u.Name)
-	d.Set("username", u.Username)
-	d.Set("first_name", u.FirstName)
-	d.Set("last_name", u.LastName)
-	d.Set("email", u.Email)
-	d.Set("is_active", u.IsActive)
-	d.Set("phone", u.Phone)
-	d.Set("security_question", u.SecurityQuestion)
-	d.Set("security_answer", u.SecurityAnswer)
-	d.Set("default_app_id", u.DefaultAppID)
-	d.Set("oauth_provider", u.OauthProvider)
+	ops := []func() error{
+		setOrError(d, "name", u.Name),
+		setOrError(d, "username", u.Username),
+		setOrError(d, "first_name", u.FirstName),
+		setOrError(d, "last_name", u.LastName),
+		setOrError(d, "email", u.Email),
+		setOrError(d, "is_active", u.IsActive),
+		setOrError(d, "phone", u.Phone),
+		setOrError(d, "security_question", u.SecurityQuestion),
+		setOrError(d, "security_answer", u.SecurityAnswer),
+		setOrError(d, "default_app_id", u.DefaultAppID),
+		setOrError(d, "oauth_provider", u.OauthProvider),
+	}
 
-	return nil
+	lookup := []map[string]interface{}{}
+	for _, l := range u.Lookups {
+		lookup = append(lookup, map[string]interface{}{
+			"id":      l.ID,
+			"name":    l.Name,
+			"value":   l.Value,
+			"private": l.Private,
+		})
+	}
+
+	ops = append(ops, setOrError(d, "lookup", lookup))
+
+	return firstError(ops)
 }

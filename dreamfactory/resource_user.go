@@ -68,18 +68,47 @@ func resourceUser() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"lookup": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"name": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"private": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+					},
+				},
+			},
 		},
 	}
 }
 
 func resourceUserCreate(d *schema.ResourceData, c interface{}) error {
-	ur := types.UserFromResourceData(d)
-	u, err := c.(*api.Client).UserCreate(types.UsersRequest{Resource: []types.User{ur}})
+	ur, err := types.UserFromResourceData(d)
+	if err != nil {
+		return err
+	}
+	u, err := c.(*api.Client).UserCreate(types.UsersRequest{Resource: []types.User{*ur}})
 	if err != nil {
 		return err
 	}
 	d.SetId(strconv.Itoa(u.Resource[0].ID))
-	return nil
+	return resourceUserRead(d, c)
 }
 
 func resourceUserRead(d *schema.ResourceData, c interface{}) error {
@@ -91,8 +120,14 @@ func resourceUserRead(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceUserUpdate(d *schema.ResourceData, c interface{}) error {
-	u := types.UserFromResourceData(d)
-	return c.(*api.Client).UserUpdate(d.Id(), u)
+	u, err := types.UserFromResourceData(d)
+	if err != nil {
+		return err
+	}
+	if err := c.(*api.Client).UserUpdate(d.Id(), u); err != nil {
+		return err
+	}
+	return u.FillResourceData(d)
 }
 
 func resourceUserDelete(d *schema.ResourceData, c interface{}) error {

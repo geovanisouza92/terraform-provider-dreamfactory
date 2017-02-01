@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+
+	"github.com/hashicorp/terraform/helper/logging"
 
 	"github.com/geovanisouza92/terraform-provider-dreamfactory/dreamfactory/types"
 )
@@ -45,9 +48,13 @@ func (c *Client) send(method, path string, expectedStatusCode int, in, out inter
 	// Serialize request body
 	if in != nil {
 		br = &bytes.Buffer{}
-		e := json.NewEncoder(br)
-		if err := e.Encode(in); err != nil {
+		if err := json.NewEncoder(br).Encode(in); err != nil {
 			return err
+		}
+
+		if logging.IsDebugOrHigher() {
+			buf := br.(*bytes.Buffer)
+			log.Println("Request: " + string(buf.Bytes()))
 		}
 	}
 
@@ -86,9 +93,15 @@ func (c *Client) send(method, path string, expectedStatusCode int, in, out inter
 		return nil
 	}
 
+	b, _ := ioutil.ReadAll(res.Body)
+	buf := bytes.NewBuffer(b)
+
+	if logging.IsDebugOrHigher() {
+		log.Println("Response: " + string(buf.Bytes()))
+	}
+
 	// Parse response
-	d := json.NewDecoder(res.Body)
-	if err = d.Decode(out); err != nil {
+	if err = json.NewDecoder(buf).Decode(out); err != nil {
 		return err
 	}
 
