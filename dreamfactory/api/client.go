@@ -54,7 +54,7 @@ func (c *Client) send(method, path string, expectedStatusCode int, in, out inter
 
 		if logging.IsDebugOrHigher() {
 			buf := br.(*bytes.Buffer)
-			log.Println("Request: " + string(buf.Bytes()))
+			log.Println("Request: " + method + " " + path + "\n" + string(buf.Bytes()))
 		}
 	}
 
@@ -97,7 +97,7 @@ func (c *Client) send(method, path string, expectedStatusCode int, in, out inter
 	buf := bytes.NewBuffer(b)
 
 	if logging.IsDebugOrHigher() {
-		log.Println("Response: " + string(buf.Bytes()))
+		log.Println("Response: " + method + " " + path + "\n" + string(buf.Bytes()))
 	}
 
 	// Parse response
