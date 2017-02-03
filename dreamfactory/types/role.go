@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -20,18 +21,18 @@ type RolesResponse struct {
 
 // Role represents a DreamFactory role
 type Role struct {
-	ID          int          `json:"id"`
+	ID          int          `json:"id,omitempty"`
 	Name        string       `json:"name"`
 	Description string       `json:"description,omitempty"`
-	IsActive    bool         `json:"is_active"`
+	IsActive    bool         `json:"is_active,omitempty"`
 	Access      []RoleAccess `json:"role_service_access_by_role_id"`
 	Lookups     []RoleLookup `json:"role_lookup_by_role_id"`
 }
 
 // RoleAccess represents a DreamFactory role access configuration
 type RoleAccess struct {
-	ID            int          `json:"id"`
-	RoleID        int          `json:"role_id"`
+	ID            int          `json:"id,omitempty"`
+	RoleID        *int         `json:"role_id"`
 	ServiceID     int          `json:"service_id"`
 	Component     string       `json:"component"`
 	VerbMask      int          `json:"verb_mask"`
@@ -43,22 +44,22 @@ type RoleAccess struct {
 // RoleFilter represents a DreamFactory role filter configuration
 type RoleFilter struct {
 	Name     string `json:"name"`
-	Operator string `json:"operator"`
-	Value    string `json:"value"`
+	Operator string `json:"operator,omitempty"`
+	Value    string `json:"value,omitempty"`
 }
 
 // RoleLookup represents a DreamFactory role lookup
 type RoleLookup struct {
-	ID      int    `json:"id"`
-	RoleID  int    `json:"role_id"`
+	ID      int    `json:"id,omitempty"`
+	RoleID  *int   `json:"role_id"`
 	Name    string `json:"name"`
-	Value   string `json:"value"`
-	Private bool   `json:"private"`
+	Value   string `json:"value,omitempty"`
+	Private bool   `json:"private,omitempty"`
 }
 
 const (
 	// Get HTTP method
-	Get byte = 1 << iota
+	Get int = 1 << iota
 	// Post HTTP method
 	Post
 	// Put HTTP method
@@ -71,31 +72,31 @@ const (
 
 const (
 	// API define that request can came from HTTP API
-	API byte = 1 << iota
+	API int = 1 << iota
 	// Script define that request can came from Event scripts
 	Script
 )
 
 var (
-	roleVerbsStringToByte = map[string]byte{
+	roleVerbsStringToInt = map[string]int{
 		"get":    Get,
 		"post":   Post,
 		"put":    Put,
 		"patch":  Patch,
 		"delete": Delete,
 	}
-	roleVerbsByteToString = map[byte]string{
+	roleVerbsIntToString = map[int]string{
 		Get:    "get",
 		Post:   "post",
 		Put:    "put",
 		Patch:  "patch",
 		Delete: "delete",
 	}
-	roleRequestorStringToByte = map[string]byte{
+	roleRequestorStringToInt = map[string]int{
 		"api":    API,
 		"script": Script,
 	}
-	roleRequestorByteToString = map[byte]string{
+	roleRequestorIntToString = map[int]string{
 		API:    "api",
 		Script: "script",
 	}
@@ -120,7 +121,7 @@ var (
 // RoleFromResourceData creates a Role object from Terraform ResourceData
 func RoleFromResourceData(d *schema.ResourceData) (*Role, error) {
 	id, err := strconv.Atoi(d.Id())
-	if err != nil {
+	if d.Id() != "" && err != nil {
 		return nil, err
 	}
 
@@ -128,28 +129,80 @@ func RoleFromResourceData(d *schema.ResourceData) (*Role, error) {
 		ID:          id,
 		Name:        d.Get("name").(string),
 		Description: d.Get("description").(string),
+		IsActive:    d.Get("is_active").(bool),
 	}
 
-	access := []RoleAccess{}
-	for _, ra := range d.Get("access").(*schema.Set).List() {
-		if ra == nil {
-			continue
+	r.Access = make([]RoleAccess, 0)
+	/*
+		for i := 0; i < d.Get("access.#").(int); i++ {
+			prefix := fmt.Sprintf("access.%d.", i)
+
+			var filters []RoleFilter
+			for j := 0; j < d.Get(prefix+"filter.#").(int); j++ {
+				subprefix := fmt.Sprintf("%s.filter.%d.", prefix, j)
+				filters = append(filters, RoleFilter{
+					Name:     d.Get(subprefix + "name").(string),
+					Operator: d.Get(subprefix + "operator").(string),
+					Value:    d.Get(subprefix + "value").(string),
+				})
+			}
+
+			verbMask := 0
+			for _, vm := range d.Get(prefix + "verb_mask").(*schema.Set).List() {
+				mask, ok := roleVerbsStringToInt[vm.(string)]
+				if !ok {
+					panic("Invalid verb mask: " + vm.(string))
+				}
+				verbMask += mask
+			}
+
+			requestorMask := 0
+			for _, rm := range d.Get(prefix + "requestor_mask").(*schema.Set).List() {
+				mask, ok := roleRequestorStringToInt[rm.(string)]
+				if !ok {
+					panic("Invalid requestor mask: " + rm.(string))
+				}
+				requestorMask += mask
+			}
+
+			roleID := &r.ID
+			accessID := d.Get(prefix + "id").(int)
+			if accessID < 0 {
+				accessID = accessID * -1
+				roleID = nil
+			}
+
+			r.Access = append(r.Access, RoleAccess{
+				ID:            accessID,
+				RoleID:        roleID,
+				ServiceID:     d.Get(prefix + "service_id").(int),
+				Component:     d.Get(prefix + "component").(string),
+				VerbMask:      verbMask,
+				RequestorMask: requestorMask,
+				Filters:       filters,
+				FilterOp:      d.Get(prefix + "filter_op").(string),
+			})
 		}
-		access = append(access, roleAccessFromMap(r.ID, ra.(map[string]interface{})))
-	}
-	r.Access = access
+	*/
 
-	lookups := []RoleLookup{}
-	for _, rl := range d.Get("lookup").(*schema.Set).List() {
-		if rl == nil {
-			continue
+	r.Lookups = make([]RoleLookup, 0)
+	for i := 0; i < d.Get("lookup.#").(int); i++ {
+		prefix := fmt.Sprintf("lookup.%d.", i)
+
+		roleID := &r.ID
+		lookupID := d.Get(prefix + "id").(int)
+		if lookupID < 0 {
+			lookupID = lookupID * -1
+			roleID = nil
 		}
-		lookups = append(lookups, roleLookupFromMap(r.ID, rl.(map[string]interface{})))
-	}
-	r.Lookups = lookups
 
-	if s := d.Get("is_active").(string); s == "true" {
-		r.IsActive = true
+		r.Lookups = append(r.Lookups, RoleLookup{
+			ID:      lookupID,
+			RoleID:  roleID,
+			Name:    d.Get(prefix + "name").(string),
+			Value:   d.Get(prefix + "value").(string),
+			Private: d.Get(prefix + "private").(bool),
+		})
 	}
 
 	return &r, nil
@@ -157,126 +210,142 @@ func RoleFromResourceData(d *schema.ResourceData) (*Role, error) {
 
 // FillResourceData copy information from the Role to Terraform ResourceData
 func (r *Role) FillResourceData(d *schema.ResourceData) error {
-	access := &schema.Set{F: hashMapStringInterface}
-	for _, ra := range r.Access {
-		access.Add(ra.toMap())
-	}
-
-	lookups := &schema.Set{F: hashMapStringInterface}
-	for _, rl := range r.Lookups {
-		lookups.Add(rl.toMap())
-	}
-
-	d.Set("name", r.Name)
-	d.Set("description", r.Description)
-	d.Set("is_active", r.IsActive)
-	d.Set("access", access)
-	d.Set("lookup", lookups)
-
-	return nil
-}
-
-func roleAccessFromMap(roleID int, m map[string]interface{}) RoleAccess {
-	verbMask := byte(0)
-	for _, s := range m["verb_mask"].(*schema.Set).List() {
-		if s == nil {
-			continue
+	access := []map[string]interface{}{}
+	/*
+		for _, a := range r.Access {
+			access = append(access, map[string]interface{}{
+				"id":             a.ID,
+				"service_id":     a.ServiceID,
+				"component":      a.Component,
+				"verb_mask":      verbMaskToSlice(a.VerbMask),
+				"requestor_mask": requestorMaskToSlice(a.RequestorMask),
+				"filters":        filtersToSlice(a.Filters),
+				"filter_op":      a.FilterOp,
+			})
 		}
-		verbMask += roleVerbsStringToByte[s.(string)]
+	*/
+
+	lookup := []map[string]interface{}{}
+	for _, l := range r.Lookups {
+		lookup = append(lookup, map[string]interface{}{
+			"id":      l.ID,
+			"name":    l.Name,
+			"value":   l.Value,
+			"private": l.Private,
+		})
 	}
 
-	requestorMask := byte(0)
-	for _, s := range m["requestor_mask"].(*schema.Set).List() {
-		if s == nil {
-			continue
+	return firstError([]func() error{
+		setOrError(d, "name", r.Name),
+		setOrError(d, "description", r.Description),
+		setOrError(d, "is_active", r.IsActive),
+		setOrError(d, "access", access),
+		setOrError(d, "lookup", lookup),
+	})
+}
+
+func (r *Role) UpdateMissingResourceData(d *schema.ResourceData) error {
+	/*
+		convertAccess := func(i int) map[string]interface{} {
+			return map[string]interface{}{
+				"id":             d.Get(fmt.Sprintf("access.%d.id", i)),
+				"service_id":     d.Get(fmt.Sprintf("access.%d.service_id", i)),
+				"component":      d.Get(fmt.Sprintf("access.%d.component", i)),
+				"verb_mask":      d.Get(fmt.Sprintf("access.%d.verb_mask", i)),
+				"requestor_mask": d.Get(fmt.Sprintf("access.%d.requestor_mask", i)),
+				"filters":        d.Get(fmt.Sprintf("access.%d.filters", i)),
+				"filter_op":      d.Get(fmt.Sprintf("access.%d.filter_op", i)),
+			}
 		}
-		requestorMask += roleRequestorStringToByte[s.(string)]
-	}
-
-	filters := []RoleFilter{}
-	for _, rf := range m["filters"].(*schema.Set).List() {
-		if rf == nil {
-			continue
+		matchAccess := func(find func(int) int) []map[string]interface{} {
+			list := []map[string]interface{}{}
+			// Loop through remote items, marking items that was removed locally
+			for _, a := range r.Access {
+				if i := find(a.ID); i == -1 {
+					list = append(list, map[string]interface{}{
+						"id":             a.ID * -1,
+						"service_id":     a.ServiceID,
+						"component":      a.Component,
+						"verb_mask":      verbMaskToSlice(a.VerbMask),
+						"requestor_mask": requestorMaskToSlice(a.RequestorMask),
+						"filters":        filtersToSlice(a.Filters),
+						"filter_op":      a.FilterOp,
+					})
+				}
+			}
+			return list
 		}
-		filters = append(filters, roleFilterFromMap(rf.(map[string]interface{})))
+		access := walkAndMarkMissing("access", d, convertAccess, matchAccess)
+
+		convertLookup := func(i int) map[string]interface{} {
+			return map[string]interface{}{
+				"id":      d.Get(fmt.Sprintf("lookup.%d.id", i)),
+				"name":    d.Get(fmt.Sprintf("lookup.%d.name", i)),
+				"value":   d.Get(fmt.Sprintf("lookup.%d.value", i)),
+				"private": d.Get(fmt.Sprintf("lookup.%d.private", i)),
+			}
+		}
+		matchLookup := func(find func(int) int) []map[string]interface{} {
+			list := []map[string]interface{}{}
+			// Loop through remote items, marking items that was removed locally
+			for _, l := range r.Lookups {
+				if i := find(l.ID); i == -1 {
+					list = append(list, map[string]interface{}{
+						"id":      l.ID * -1,
+						"name":    l.Name,
+						"value":   l.Value,
+						"private": l.Private,
+					})
+				}
+			}
+			return list
+		}
+		lookup := walkAndMarkMissing("lookup", d, convertLookup, matchLookup)
+
+		return firstError([]func() error{
+			setOrError(d, "access", access),
+			setOrError(d, "lookup", lookup),
+		})
+	*/
+
+	count := d.Get("lookup.#").(int)
+
+	// Find for specific lookup ID
+	find := func(id int) /* index */ int {
+		for i := 0; i < count; i++ {
+			if _id, ok := d.Get(fmt.Sprintf("lookup.%d.id", i)).(int); ok && id == _id {
+				return i
+			}
+		}
+		return -1
 	}
 
-	return RoleAccess{
-		ID:            getInt(m, "id"),
-		RoleID:        roleID,
-		ServiceID:     m["service_id"].(int),
-		Component:     m["component"].(string),
-		VerbMask:      int(verbMask),
-		RequestorMask: int(requestorMask),
-		Filters:       filters,
-		FilterOp:      m["filter_op"].(string),
+	// Load existing items from ResourceData
+	lookup := []map[string]interface{}{}
+	for i := 0; i < count; i++ {
+		lookup = append(lookup, map[string]interface{}{
+			"id":      d.Get(fmt.Sprintf("lookup.%d.id", i)),
+			"name":    d.Get(fmt.Sprintf("lookup.%d.name", i)),
+			"value":   d.Get(fmt.Sprintf("lookup.%d.value", i)),
+			"private": d.Get(fmt.Sprintf("lookup.%d.private", i)),
+		})
 	}
-}
 
-func (ra *RoleAccess) toMap() map[string]interface{} {
-	verbMask := &schema.Set{F: hashString}
-	for b, s := range roleVerbsByteToString {
-		if byte(ra.VerbMask)&b != 0 {
-			verbMask.Add(s)
+	// Loop through remote lookups, marking items that was removed locally
+	for _, l := range r.Lookups {
+		if i := find(l.ID); i == -1 {
+			lookup = append(lookup, map[string]interface{}{
+				"id":      l.ID * -1,
+				"name":    l.Name,
+				"value":   l.Value,
+				"private": l.Private,
+			})
 		}
 	}
 
-	requestorMask := &schema.Set{F: hashString}
-	for b, s := range roleRequestorByteToString {
-		if byte(ra.RequestorMask)&b != 0 {
-			requestorMask.Add(s)
-		}
-	}
-
-	filters := &schema.Set{F: hashMapStringString}
-	for _, rf := range ra.Filters {
-		filters.Add(rf.toMap())
-	}
-
-	return map[string]interface{}{
-		"id":             ra.ID,
-		"service_id":     ra.ServiceID,
-		"component":      ra.Component,
-		"verb_mask":      verbMask,
-		"requestor_mask": requestorMask,
-		"filters":        filters,
-		"filter_op":      ra.FilterOp,
-	}
-}
-
-func roleFilterFromMap(m map[string]interface{}) RoleFilter {
-	return RoleFilter{
-		Name:     m["name"].(string),
-		Operator: m["operator"].(string),
-		Value:    m["value"].(string),
-	}
-}
-
-func (rf *RoleFilter) toMap() map[string]string {
-	return map[string]string{
-		"name":     rf.Name,
-		"operator": rf.Operator,
-		"value":    rf.Value,
-	}
-}
-
-func roleLookupFromMap(roleID int, m map[string]interface{}) RoleLookup {
-	return RoleLookup{
-		ID:      getInt(m, "id"),
-		RoleID:  roleID,
-		Name:    m["name"].(string),
-		Value:   m["value"].(string),
-		Private: m["private"].(bool),
-	}
-}
-
-func (r *RoleLookup) toMap() map[string]interface{} {
-	return map[string]interface{}{
-		"id":      r.ID,
-		"name":    r.Name,
-		"value":   r.Value,
-		"private": r.Private,
-	}
+	return firstError([]func() error{
+		setOrError(d, "lookup", lookup),
+	})
 }
 
 // IsValidOperator validates if a given operator is valid for lookups
@@ -290,4 +359,36 @@ func IsValidOperator(o string) bool {
 func IsValidOp(o string) bool {
 	_, ok := roleFilterOp[o]
 	return ok
+}
+
+func verbMaskToSlice(verbMask int) []string {
+	var res []string
+	for verbInt, verbString := range roleVerbsIntToString {
+		if verbMask&verbInt != 0 {
+			res = append(res, verbString)
+		}
+	}
+	return res
+}
+
+func requestorMaskToSlice(requestorMask int) []string {
+	var res []string
+	for requestorInt, requestorString := range roleRequestorIntToString {
+		if requestorMask&requestorInt != 0 {
+			res = append(res, requestorString)
+		}
+	}
+	return res
+}
+
+func filtersToSlice(filters []RoleFilter) []map[string]interface{} {
+	var res []map[string]interface{}
+	for _, f := range filters {
+		res = append(res, map[string]interface{}{
+			"name":     f.Name,
+			"operator": f.Operator,
+			"value":    f.Value,
+		})
+	}
+	return res
 }

@@ -9,7 +9,7 @@ import (
 
 type UsersRequest struct {
 	Resource []User `json:"resource,omitempty"`
-	Ids      []int  `json:"ids,omitempty"`
+	IDs      []int  `json:"ids,omitempty"`
 }
 
 type UsersResponse struct {
@@ -65,12 +65,14 @@ func UserFromResourceData(d *schema.ResourceData) (*User, error) {
 	u.Lookups = make([]UserLookup, 0)
 	for i := 0; i < d.Get("lookup.#").(int); i++ {
 		prefix := fmt.Sprintf("lookup.%d.", i)
+
 		userID := &u.ID
 		lookupID := d.Get(prefix + "id").(int)
 		if lookupID < 0 {
 			lookupID = lookupID * -1
 			userID = nil
 		}
+
 		u.Lookups = append(u.Lookups, UserLookup{
 			ID:      lookupID,
 			UserID:  userID,

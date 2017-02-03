@@ -2,7 +2,6 @@ package dreamfactory
 
 import (
 	"errors"
-	"log"
 	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -31,12 +30,12 @@ func resourceRole() *schema.Resource {
 				Optional: true,
 			},
 			"is_active": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
 			"access": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -67,7 +66,7 @@ func resourceRole() *schema.Resource {
 								Type: schema.TypeString,
 							},
 						},
-						"filters": &schema.Schema{
+						"filter": &schema.Schema{
 							Type:     schema.TypeSet,
 							Optional: true,
 							Elem: &schema.Resource{
@@ -112,13 +111,13 @@ func resourceRole() *schema.Resource {
 				},
 			},
 			"lookup": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": &schema.Schema{
 							Type:     schema.TypeInt,
-							Required: false,
+							Optional: true,
 							Computed: true,
 						},
 						"name": &schema.Schema{
@@ -144,16 +143,14 @@ func resourceRole() *schema.Resource {
 func resourceRoleCreate(d *schema.ResourceData, c interface{}) error {
 	rr, err := types.RoleFromResourceData(d)
 	if err != nil {
-		return nil
+		return err
 	}
 	r, err := c.(*api.Client).RoleCreate(types.RolesRequest{Resource: []types.Role{*rr}})
 	if err != nil {
 		return err
 	}
-	role := r.Resource[0]
-	log.Printf("%#v\n", role)
-	d.SetId(strconv.Itoa(role.ID))
-	return nil
+	d.SetId(strconv.Itoa(r.Resource[0].ID))
+	return resourceRoleRead(d, c)
 }
 
 func resourceRoleRead(d *schema.ResourceData, c interface{}) error {
@@ -165,11 +162,25 @@ func resourceRoleRead(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceRoleUpdate(d *schema.ResourceData, c interface{}) error {
+	api := c.(*api.Client)
+
+	actual, err := api.RoleRead(d.Id())
+	if err != nil {
+		return errors.New("Could not read user from remote: " + err.Error())
+	}
+
+	if err = actual.UpdateMissingResourceData(d); err != nil {
+		return err
+	}
+
 	r, err := types.RoleFromResourceData(d)
 	if err != nil {
-		return nil
+		return err
 	}
-	return c.(*api.Client).RoleUpdate(d.Id(), r)
+	if err := api.RoleUpdate(d.Id(), r); err != nil {
+		return err
+	}
+	return r.FillResourceData(d)
 }
 
 func resourceRoleDelete(d *schema.ResourceData, c interface{}) error {
