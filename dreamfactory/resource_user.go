@@ -1,6 +1,7 @@
 package dreamfactory
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -120,11 +121,22 @@ func resourceUserRead(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceUserUpdate(d *schema.ResourceData, c interface{}) error {
+	api := c.(*api.Client)
+
+	actual, err := api.UserRead(d.Id())
+	if err != nil {
+		return errors.New("Could not read user from remote: " + err.Error())
+	}
+
+	if err = actual.UpdateMissingResourceData(d); err != nil {
+		return err
+	}
+
 	u, err := types.UserFromResourceData(d)
 	if err != nil {
 		return err
 	}
-	if err := c.(*api.Client).UserUpdate(d.Id(), u); err != nil {
+	if err := api.UserUpdate(d.Id(), u); err != nil {
 		return err
 	}
 	return u.FillResourceData(d)

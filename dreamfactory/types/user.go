@@ -30,12 +30,12 @@ type User struct {
 	SecurityAnswer   string       `json:"security_answer,omitempty"`
 	DefaultAppID     int          `json:"default_app_id,omitempty"`
 	OauthProvider    string       `json:"oauth_provider,omitempty"`
-	Lookups          []UserLookup `json:"user_lookup_by_user_id,omitempty"`
+	Lookups          []UserLookup `json:"user_lookup_by_user_id"`
 }
 
 type UserLookup struct {
 	ID      int    `json:"id,omitempty"`
-	UserID  int    `json:"user_id,omitempty"`
+	UserID  *int   `json:"user_id"`
 	Name    string `json:"name"`
 	Value   string `json:"value,omitempty"`
 	Private bool   `json:"private,omitempty"`
@@ -43,9 +43,10 @@ type UserLookup struct {
 
 func UserFromResourceData(d *schema.ResourceData) (*User, error) {
 	id, err := strconv.Atoi(d.Id())
-	if err != nil {
+	if d.Id() != "" && err != nil {
 		return nil, err
 	}
+
 	u := User{
 		ID:               id,
 		Name:             d.Get("name").(string),
@@ -61,12 +62,18 @@ func UserFromResourceData(d *schema.ResourceData) (*User, error) {
 		OauthProvider:    d.Get("oauth_provider").(string),
 	}
 
-	count := d.Get("lookup.#").(int)
-	for i := 0; i < count; i++ {
+	u.Lookups = make([]UserLookup, 0)
+	for i := 0; i < d.Get("lookup.#").(int); i++ {
 		prefix := fmt.Sprintf("lookup.%d.", i)
+		userID := &u.ID
+		lookupID := d.Get(prefix + "id").(int)
+		if lookupID < 0 {
+			lookupID = lookupID * -1
+			userID = nil
+		}
 		u.Lookups = append(u.Lookups, UserLookup{
-			ID:      d.Get(prefix + "id").(int),
-			UserID:  u.ID,
+			ID:      lookupID,
+			UserID:  userID,
 			Name:    d.Get(prefix + "name").(string),
 			Value:   d.Get(prefix + "value").(string),
 			Private: d.Get(prefix + "private").(bool),
@@ -77,7 +84,17 @@ func UserFromResourceData(d *schema.ResourceData) (*User, error) {
 }
 
 func (u *User) FillResourceData(d *schema.ResourceData) error {
-	ops := []func() error{
+	lookup := []map[string]interface{}{}
+	for _, l := range u.Lookups {
+		lookup = append(lookup, map[string]interface{}{
+			"id":      l.ID,
+			"name":    l.Name,
+			"value":   l.Value,
+			"private": l.Private,
+		})
+	}
+
+	return firstError([]func() error{
 		setOrError(d, "name", u.Name),
 		setOrError(d, "username", u.Username),
 		setOrError(d, "first_name", u.FirstName),
@@ -89,19 +106,47 @@ func (u *User) FillResourceData(d *schema.ResourceData) error {
 		setOrError(d, "security_answer", u.SecurityAnswer),
 		setOrError(d, "default_app_id", u.DefaultAppID),
 		setOrError(d, "oauth_provider", u.OauthProvider),
+		setOrError(d, "lookup", lookup),
+	})
+}
+
+func (u *User) UpdateMissingResourceData(d *schema.ResourceData) error {
+	count := d.Get("lookup.#").(int)
+
+	// Find for specific lookup ID
+	find := func(id int) /* index */ int {
+		for i := 0; i < count; i++ {
+			if _id, ok := d.Get(fmt.Sprintf("lookup.%d.id", i)).(int); ok && id == _id {
+				return i
+			}
+		}
+		return -1
 	}
 
+	// Load existing items from ResourceData
 	lookup := []map[string]interface{}{}
-	for _, l := range u.Lookups {
+	for i := 0; i < count; i++ {
 		lookup = append(lookup, map[string]interface{}{
-			"id":      l.ID,
-			"name":    l.Name,
-			"value":   l.Value,
-			"private": l.Private,
+			"id":      d.Get(fmt.Sprintf("lookup.%d.id", i)),
+			"name":    d.Get(fmt.Sprintf("lookup.%d.name", i)),
+			"value":   d.Get(fmt.Sprintf("lookup.%d.value", i)),
+			"private": d.Get(fmt.Sprintf("lookup.%d.private", i)),
 		})
 	}
 
-	ops = append(ops, setOrError(d, "lookup", lookup))
+	// Loop through remote lookups, marking items that was removed locally
+	for _, l := range u.Lookups {
+		if i := find(l.ID); i == -1 {
+			lookup = append(lookup, map[string]interface{}{
+				"id":      l.ID * -1,
+				"name":    l.Name,
+				"value":   l.Value,
+				"private": l.Private,
+			})
+		}
+	}
 
-	return firstError(ops)
+	return firstError([]func() error{
+		setOrError(d, "lookup", lookup),
+	})
 }
