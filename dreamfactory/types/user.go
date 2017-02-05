@@ -135,11 +135,12 @@ func (u *User) UpdateMissingResourceData(d *schema.ResourceData) error {
 	// Load existing items from ResourceData
 	lookup := []map[string]interface{}{}
 	for i := 0; i < count; i++ {
+		prefix := fmt.Sprintf("lookup.%d.", i)
 		lookup = append(lookup, map[string]interface{}{
-			"id":      d.Get(fmt.Sprintf("lookup.%d.id", i)),
-			"name":    d.Get(fmt.Sprintf("lookup.%d.name", i)),
-			"value":   d.Get(fmt.Sprintf("lookup.%d.value", i)),
-			"private": d.Get(fmt.Sprintf("lookup.%d.private", i)),
+			"id":      d.Get(prefix + "id"),
+			"name":    d.Get(prefix + "name"),
+			"value":   d.Get(prefix + "value"),
+			"private": d.Get(prefix + "private"),
 		})
 	}
 
