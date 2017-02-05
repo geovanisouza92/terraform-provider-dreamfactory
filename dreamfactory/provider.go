@@ -1,12 +1,15 @@
 package dreamfactory
 
 import (
+	"net/http"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/geovanisouza92/terraform-provider-dreamfactory/dreamfactory/api"
 )
 
+// Provider creates a Terraform Provider configuration
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -36,5 +39,5 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	endpoint := d.Get("endpoint").(string)
 	email := d.Get("email").(string)
 	password := d.Get("password").(string)
-	return api.New(endpoint, email, password)
+	return api.New(endpoint, email, password, &http.Client{})
 }

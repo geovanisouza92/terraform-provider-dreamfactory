@@ -17,16 +17,18 @@ import (
 // admin app API key
 const apiKey = "6498a8ad1beb9d84d63035c5d1120c007fad6de706734db9689f8996707e0f7d"
 
+// Client is used to consume DreamFactory's system/ API
 type Client struct {
 	endpoint string
 	hc       *http.Client
 	session  *types.Session
 }
 
-func New(endpoint, email, password string) (*Client, error) {
+// New creates a new Client instance, of an error if login credentials are invalid
+func New(endpoint, email, password string, hc *http.Client) (*Client, error) {
 	c := Client{
 		endpoint: endpoint,
-		hc:       &http.Client{},
+		hc:       hc,
 	}
 	s, err := c.login(email, password)
 	if err != nil {
@@ -81,9 +83,9 @@ func (c *Client) send(method, path string, expectedStatusCode int, in, out inter
 
 	// Handle unexpected error
 	if res.StatusCode != expectedStatusCode {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return err
+		b, err2 := ioutil.ReadAll(res.Body)
+		if err2 != nil {
+			return err2
 		}
 		return fmt.Errorf("api response with status: %d\n%s", res.StatusCode, string(b))
 	}

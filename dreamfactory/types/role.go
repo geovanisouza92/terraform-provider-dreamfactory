@@ -244,6 +244,7 @@ func (r *Role) FillResourceData(d *schema.ResourceData) error {
 	})
 }
 
+// UpdateMissingResourceData checks for remote access/lookup that doesn't exist locally anymore, marking the role with missing ones, to allow remote removal
 func (r *Role) UpdateMissingResourceData(d *schema.ResourceData) error {
 	/*
 		convertAccess := func(i int) map[string]interface{} {

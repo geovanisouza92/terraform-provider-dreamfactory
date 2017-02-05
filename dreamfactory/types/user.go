@@ -7,16 +7,19 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+// UsersRequest is a request object for User CRUD
 type UsersRequest struct {
 	Resource []User `json:"resource,omitempty"`
 	IDs      []int  `json:"ids,omitempty"`
 }
 
+// UsersResponse is a response object for User CRUD
 type UsersResponse struct {
 	Resource []User   `json:"resource,omitempty"`
 	Meta     Metadata `json:"meta,omitempty"`
 }
 
+// User represents a DreamFactory user
 type User struct {
 	ID               int          `json:"id,omitempty"`
 	Name             string       `json:"name"`
@@ -33,6 +36,7 @@ type User struct {
 	Lookups          []UserLookup `json:"user_lookup_by_user_id"`
 }
 
+// UserLookup represents a DreamFactory user lookup
 type UserLookup struct {
 	ID      int    `json:"id,omitempty"`
 	UserID  *int   `json:"user_id"`
@@ -41,6 +45,7 @@ type UserLookup struct {
 	Private bool   `json:"private,omitempty"`
 }
 
+// UserFromResourceData creates a User object from Terraform ResourceData
 func UserFromResourceData(d *schema.ResourceData) (*User, error) {
 	id, err := strconv.Atoi(d.Id())
 	if d.Id() != "" && err != nil {
@@ -85,6 +90,7 @@ func UserFromResourceData(d *schema.ResourceData) (*User, error) {
 	return &u, nil
 }
 
+// FillResourceData copy information from the User to Terraform ResourceData
 func (u *User) FillResourceData(d *schema.ResourceData) error {
 	lookup := []map[string]interface{}{}
 	for _, l := range u.Lookups {
@@ -112,6 +118,7 @@ func (u *User) FillResourceData(d *schema.ResourceData) error {
 	})
 }
 
+// UpdateMissingResourceData checks for remote lookup that doesn't exist locally anymore, marking the user with missing ones, to allow remote removal
 func (u *User) UpdateMissingResourceData(d *schema.ResourceData) error {
 	count := d.Get("lookup.#").(int)
 

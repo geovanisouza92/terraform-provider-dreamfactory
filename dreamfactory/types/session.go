@@ -1,5 +1,6 @@
 package types
 
+// Session represents a DreamFactory API session
 type Session struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
