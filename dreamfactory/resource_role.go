@@ -58,6 +58,7 @@ func resourceRole() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+							Set: types.VerbMaskFunc,
 						},
 						"requestor_mask": &schema.Schema{
 							Type:     schema.TypeSet,
@@ -65,9 +66,10 @@ func resourceRole() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+							Set: types.RequestorMaskFunc,
 						},
 						"filter": &schema.Schema{
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
