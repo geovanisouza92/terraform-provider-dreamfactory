@@ -106,7 +106,7 @@ func resourceAppCreate(d *schema.ResourceData, c interface{}) error {
 		return err
 	}
 	d.SetId(strconv.Itoa(a.Resource[0].ID))
-	return nil
+	return resourceAppRead(d, c)
 }
 
 func resourceAppRead(d *schema.ResourceData, c interface{}) error {
