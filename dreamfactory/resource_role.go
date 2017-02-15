@@ -190,9 +190,8 @@ func resourceRoleDelete(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceRoleExists(d *schema.ResourceData, c interface{}) (bool, error) {
-	// FIXME: Possible bug
-	err := c.(*api.Client).RoleExists(d.Id())
-	return err == nil, err
+	r, err := c.(*api.Client).RoleRead(d.Id())
+	return r.ID > 0, err
 }
 
 func resourceRoleImporter(d *schema.ResourceData, c interface{}) ([]*schema.ResourceData, error) {

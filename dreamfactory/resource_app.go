@@ -127,9 +127,8 @@ func resourceAppDelete(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceAppExists(d *schema.ResourceData, c interface{}) (bool, error) {
-	// FIXME: Possible bug
-	err := c.(*api.Client).AppExists(d.Id())
-	return err == nil, err
+	a, err := c.(*api.Client).AppRead(d.Id())
+	return a.ID > 0, err
 }
 
 func resourceAppImporter(d *schema.ResourceData, c interface{}) ([]*schema.ResourceData, error) {

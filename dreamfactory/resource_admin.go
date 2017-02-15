@@ -161,9 +161,8 @@ func resourceAdminDelete(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceAdminExists(d *schema.ResourceData, c interface{}) (bool, error) {
-	// FIXME: Possible bug
-	err := c.(*api.Client).AdminExists(d.Id())
-	return err == nil, err
+	a, err := c.(*api.Client).AdminRead(d.Id())
+	return a.ID > 0, err
 }
 
 func resourceAdminImporter(d *schema.ResourceData, c interface{}) ([]*schema.ResourceData, error) {

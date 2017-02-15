@@ -25,8 +25,3 @@ func (c *Client) AdminUpdate(id string, u *types.Admin) error {
 func (c *Client) AdminDelete(id string) error {
 	return c.send("DELETE", "/api/v2/system/admin/"+id+"?fields=*&related=user_lookup_by_user_id", 200, nil, nil)
 }
-
-// AdminExists checks if a admin exists
-func (c *Client) AdminExists(id string) error {
-	return c.send("GET", "/api/v2/system/admin/"+id+"?fields=*&related=user_lookup_by_user_id", 200, nil, nil)
-}

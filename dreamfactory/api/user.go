@@ -25,8 +25,3 @@ func (c *Client) UserUpdate(id string, u *types.User) error {
 func (c *Client) UserDelete(id string) error {
 	return c.send("DELETE", "/api/v2/system/user/"+id+"?fields=*&related=user_lookup_by_user_id,user_to_app_to_role_by_user_id", 200, nil, nil)
 }
-
-// UserExists checks if a user exists
-func (c *Client) UserExists(id string) error {
-	return c.send("GET", "/api/v2/system/user/"+id+"?fields=*&related=user_lookup_by_user_id,user_to_app_to_role_by_user_id", 200, nil, nil)
-}

@@ -147,9 +147,8 @@ func resourceUserDelete(d *schema.ResourceData, c interface{}) error {
 }
 
 func resourceUserExists(d *schema.ResourceData, c interface{}) (bool, error) {
-	// FIXME: Possible bug
-	err := c.(*api.Client).UserExists(d.Id())
-	return err == nil, err
+	u, err := c.(*api.Client).UserRead(d.Id())
+	return u.ID > 0, err
 }
 
 func resourceUserImporter(d *schema.ResourceData, c interface{}) ([]*schema.ResourceData, error) {

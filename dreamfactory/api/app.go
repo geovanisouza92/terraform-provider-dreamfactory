@@ -25,8 +25,3 @@ func (c *Client) AppUpdate(id string, a types.App) error {
 func (c *Client) AppDelete(id string) error {
 	return c.send("DELETE", "/api/v2/system/app/"+id, 200, nil, nil)
 }
-
-// AppExists checks if the app exists on the remote
-func (c *Client) AppExists(id string) error {
-	return c.send("GET", "/api/v2/system/app/"+id, 200, nil, nil)
-}

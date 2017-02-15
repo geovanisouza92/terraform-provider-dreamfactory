@@ -25,8 +25,3 @@ func (c *Client) RoleUpdate(id string, r *types.Role) error {
 func (c *Client) RoleDelete(id string) error {
 	return c.send("DELETE", "/api/v2/system/role/"+id+"?fields=*&related=role_service_access_by_role_id,role_lookup_by_role_id", 200, nil, nil)
 }
-
-// RoleExists checks if a role exists
-func (c *Client) RoleExists(id string) error {
-	return c.send("GET", "/api/v2/system/role/"+id+"?fields=*&related=role_service_access_by_role_id,role_lookup_by_role_id", 200, nil, nil)
-}
