@@ -28,9 +28,17 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"dreamfactory_admin": resourceAdmin(),
-			"dreamfactory_user":  resourceUser(),
-			"dreamfactory_app":   resourceApp(),
-			"dreamfactory_role":  resourceRole(),
+			// "dreamfactory_app_group"
+			"dreamfactory_app": resourceApp(),
+			// "dreamfactory_cors"
+			// "dreamfactory_custom" ???
+			// "dreamfactory_email_template"
+			// "dreamfactory_event_script"
+			// "dreamfactory_lookup"
+			"dreamfactory_role": resourceRole(),
+			// "dreamfactory_script"
+			// "dreamfactory_service" (/system/service_type)
+			"dreamfactory_user": resourceUser(),
 		},
 		ConfigureFunc: configureProvider,
 	}
