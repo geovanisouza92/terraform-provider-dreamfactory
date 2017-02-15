@@ -29,8 +29,8 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"dreamfactory_admin": resourceAdmin(),
 			// "dreamfactory_app_group"
-			"dreamfactory_app": resourceApp(),
-			// "dreamfactory_cors"
+			"dreamfactory_app":  resourceApp(),
+			"dreamfactory_cors": resourceCors(),
 			// "dreamfactory_custom" ???
 			// "dreamfactory_email_template"
 			// "dreamfactory_event_script"
