@@ -21,13 +21,13 @@ type CorsResponse struct {
 
 // Cors represents an cors configuration in DreamFactory
 type Cors struct {
-	ID      int      `json:"id"`
+	ID      int      `json:"id,omitempty"`
 	Path    string   `json:"path"`
 	Origin  string   `json:"origin"`
 	Header  string   `json:"header"`
 	Method  []string `json:"method"`
 	MaxAge  int      `json:"max_age"`
-	Enabled bool     `json:"enabled"`
+	Enabled bool     `json:"enabled,omitempty"`
 }
 
 var methodHash = map[string]int{
