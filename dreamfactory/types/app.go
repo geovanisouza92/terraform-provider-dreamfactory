@@ -69,22 +69,25 @@ func AppFromResourceData(d *schema.ResourceData) App {
 
 // FillResourceData fills ResourceData with App information
 func (a *App) FillResourceData(d *schema.ResourceData) error {
-	d.Set("name", a.Name)
-	d.Set("api_key", a.APIKey)
-	d.Set("description", a.Description)
-	d.Set("is_active", a.IsActive)
-	d.Set("type", appValuesToString[a.Type])
-	d.Set("path", a.Path)
+	var url string
 	if a.Type == appValuesToInt["remote"] {
-		d.Set("url", a.LaunchURL)
+		url = a.LaunchURL
 	} else {
-		d.Set("url", a.URL)
+		url = a.URL
 	}
-	d.Set("storage_service_id", a.StorageServiceID)
-	d.Set("storage_container", a.StorageContainer)
-	d.Set("allow_fullscreen_toggle", a.AllowFullscreenToggle)
-	d.Set("role_id", a.RoleID)
-	d.Set("launch_url", a.LaunchURL)
 
-	return nil
+	return firstError([]func() error{
+		setOrError(d, "name", a.Name),
+		setOrError(d, "api_key", a.APIKey),
+		setOrError(d, "description", a.Description),
+		setOrError(d, "is_active", a.IsActive),
+		setOrError(d, "type", appValuesToString[a.Type]),
+		setOrError(d, "path", a.Path),
+		setOrError(d, "url", url),
+		setOrError(d, "storage_service_id", a.StorageServiceID),
+		setOrError(d, "storage_container", a.StorageContainer),
+		setOrError(d, "allow_fullscreen_toggle", a.AllowFullscreenToggle),
+		setOrError(d, "role_id", a.RoleID),
+		setOrError(d, "launch_url", a.LaunchURL),
+	})
 }
