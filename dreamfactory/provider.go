@@ -32,7 +32,7 @@ func Provider() terraform.ResourceProvider {
 			"dreamfactory_app":  resourceApp(),
 			"dreamfactory_cors": resourceCors(),
 			// "dreamfactory_custom" ???
-			// "dreamfactory_email_template"
+			"dreamfactory_email_template": resourceEmailTemplate(),
 			// "dreamfactory_event_script"
 			// "dreamfactory_lookup"
 			"dreamfactory_role": resourceRole(),
