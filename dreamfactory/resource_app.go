@@ -90,7 +90,7 @@ func resourceApp() *schema.Resource {
 
 var (
 	appTypes          = []string{"no_storage", "provisioned", "remote", "on_webserver"}
-	errInvalidAppType = errors.New(`Invalid dreafactory_app type. Possible values are:
+	errInvalidAppType = errors.New(`Invalid dreamfactory_app type. Possible values are:
 
 	"no_storage":   No Storage Required - remote device, client, or desktop.
 	"provisioned":  On a provisioned file storage service.
