@@ -33,9 +33,9 @@ func Provider() terraform.ResourceProvider {
 			"dreamfactory_cors": resourceCors(),
 			// "dreamfactory_custom" ???
 			"dreamfactory_email_template": resourceEmailTemplate(),
-			// "dreamfactory_event_script"
-			"dreamfactory_lookup": resourceLookup(),
-			"dreamfactory_role":   resourceRole(),
+			"dreamfactory_event_script":   resourceEventScript(),
+			"dreamfactory_lookup":         resourceLookup(),
+			"dreamfactory_role":           resourceRole(),
 			// "dreamfactory_script"
 			// "dreamfactory_service" (/system/service_type)
 			"dreamfactory_user": resourceUser(),
