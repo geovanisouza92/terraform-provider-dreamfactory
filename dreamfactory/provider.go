@@ -48,5 +48,12 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	endpoint := d.Get("endpoint").(string)
 	email := d.Get("email").(string)
 	password := d.Get("password").(string)
-	return api.New(endpoint, email, password, &http.Client{})
+	c, err := api.New(endpoint, email, password, &http.Client{})
+	if err != nil {
+		return nil, err
+	}
+	if err = resourceEventScriptInit(c); err != nil {
+		return nil, err
+	}
+	return c, nil
 }

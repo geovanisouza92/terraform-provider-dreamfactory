@@ -1,8 +1,9 @@
 package dreamfactory
 
 import (
-	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -40,7 +41,7 @@ func resourceEventScript() *schema.Resource {
 						}
 					}
 					if !found {
-						errors = append(errors, errInvalidEventScriptType)
+						errors = append(errors, errInvalidEventScriptType())
 					}
 					return
 				},
@@ -68,15 +69,25 @@ func resourceEventScript() *schema.Resource {
 }
 
 var (
-	eventScriptTypes          = []string{"python", "nodejs", "php", "v8js"}
-	errInvalidEventScriptType = errors.New(`Invalid dreamfactory_event_script type. Possible values are:
-
-	- "python"
-	- "nodejs"
-	- "php"
-	- "v8js"
-`)
+	eventScriptTypes          = []string{}
+	errInvalidEventScriptType = func() error {
+		options := strings.Join(eventScriptTypes, "\n")
+		return fmt.Errorf("Invalid dreamfactory_event_script type. Possible values are:\n\n%s", options)
+	}
 )
+
+func resourceEventScriptInit(api *api.Client) error {
+	sts, err := api.ScriptTypeList()
+	if err != nil {
+		return err
+	}
+
+	for _, st := range sts.Resource {
+		eventScriptTypes = append(eventScriptTypes, st.Name)
+	}
+
+	return nil
+}
 
 func resourceEventScriptCreate(d *schema.ResourceData, c interface{}) error {
 	esr := types.EventScriptFromResourceData(d)
