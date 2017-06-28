@@ -37,6 +37,9 @@ func Provider() terraform.ResourceProvider {
 			"dreamfactory_service":        resourceService(),
 			"dreamfactory_user":           resourceUser(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"dreamfactory_service": dataSourceService(),
+		},
 		ConfigureFunc: configureProvider,
 	}
 }

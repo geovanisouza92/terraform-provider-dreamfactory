@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/url"
+	"strings"
+
 	"github.com/geovanisouza92/terraform-provider-dreamfactory/dreamfactory/types"
 )
 
@@ -21,7 +24,25 @@ func (c *Client) ServiceUpdate(id string, s types.Service) error {
 	return c.send("PATCH", "/api/v2/system/service/"+id, 200, s, nil)
 }
 
-// ServiceDelete destroys an service
+// ServiceDelete destroys a service
 func (c *Client) ServiceDelete(id string) error {
 	return c.send("DELETE", "/api/v2/system/service/"+id, 200, nil, nil)
+}
+
+// ServiceLoad load a service for data source
+func (c *Client) ServiceLoad(filter []string) (s types.Service, err error) {
+	sr := types.ServicesResponse{}
+
+	v := url.Values{}
+	v.Set("filter", strings.Join(filter, " "))
+	err = c.send("GET", "/api/v2/system/service/?"+v.Encode(), 200, nil, &sr)
+	if err != nil {
+		return
+	}
+
+	if len(sr.Resource) > 0 {
+		s = sr.Resource[0]
+	}
+
+	return
 }
