@@ -6,6 +6,6 @@ import (
 
 // ScriptTypeList gets supported script types
 func (c *Client) ScriptTypeList() (st types.ScriptTypes, err error) {
-	err = c.send("GET", "/api/v2/system/script_types", 200, nil, &st)
+	err = c.send("GET", "/api/v2/system/script_type", 200, nil, &st)
 	return
 }
