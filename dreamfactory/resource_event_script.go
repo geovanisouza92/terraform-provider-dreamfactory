@@ -33,14 +33,7 @@ func resourceEventScript() *schema.Resource {
 				ForceNew: true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
 					value := v.(string)
-					found := false
-					for _, eventScriptType := range eventScriptTypes {
-						if value == eventScriptType {
-							found = true
-							break
-						}
-					}
-					if !found {
+					if _, found := eventScriptTypes[value]; !found {
 						errors = append(errors, errInvalidEventScriptType())
 					}
 					return
@@ -69,9 +62,13 @@ func resourceEventScript() *schema.Resource {
 }
 
 var (
-	eventScriptTypes          = []string{}
+	eventScriptTypes          = map[string]bool{}
 	errInvalidEventScriptType = func() error {
-		options := strings.Join(eventScriptTypes, "\n")
+		types := []string{}
+		for t := range eventScriptTypes {
+			types = append(types, t)
+		}
+		options := strings.Join(types, "\n")
 		return fmt.Errorf("Invalid dreamfactory_event_script type. Possible values are:\n\n%s", options)
 	}
 )
@@ -82,8 +79,8 @@ func resourceEventScriptInit(api *api.Client) error {
 		return err
 	}
 
-	for _, st := range sts.Resource {
-		eventScriptTypes = append(eventScriptTypes, st.Name)
+	for _, t := range sts.Resource {
+		eventScriptTypes[t.Name] = true
 	}
 
 	return nil

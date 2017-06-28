@@ -27,18 +27,15 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"dreamfactory_admin": resourceAdmin(),
-			// "dreamfactory_app_group"
-			"dreamfactory_app":  resourceApp(),
-			"dreamfactory_cors": resourceCors(),
-			// "dreamfactory_custom" ???
+			"dreamfactory_admin":          resourceAdmin(),
+			"dreamfactory_app":            resourceApp(),
+			"dreamfactory_cors":           resourceCors(),
 			"dreamfactory_email_template": resourceEmailTemplate(),
 			"dreamfactory_event_script":   resourceEventScript(),
 			"dreamfactory_lookup":         resourceLookup(),
 			"dreamfactory_role":           resourceRole(),
-			// "dreamfactory_script"
-			// "dreamfactory_service" (/system/service_type)
-			"dreamfactory_user": resourceUser(),
+			"dreamfactory_service":        resourceService(),
+			"dreamfactory_user":           resourceUser(),
 		},
 		ConfigureFunc: configureProvider,
 	}
@@ -53,6 +50,9 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 		return nil, err
 	}
 	if err = resourceEventScriptInit(c); err != nil {
+		return nil, err
+	}
+	if err = resourceServiceInit(c); err != nil {
 		return nil, err
 	}
 	return c, nil
